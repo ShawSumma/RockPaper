@@ -22,6 +22,9 @@ class inSock:
         self.s.bind(intf)
         self.s.listen(self.numol)
         self.start()
+        self.broadcast = {}
+        for i in range(self.numol):
+            self.broadcast[i] = []
     def start(self):
         pass
     def conv(self,kw):
@@ -42,6 +45,11 @@ class inSock:
             ret = data.decode('utf8')
             ret = self.conv({'data':ret,'user id':con})
             conn.send(ret.encode('utf8'))
+            while len(self.broadcast[con]) > 0:
+                bd = self.broadcast[con][0]
+                words = 'dm from %s:\n %s' % (list(bd)[0], bd[list(bd)[0]])
+                conn.send(words.encode('utf8'))
+                self.broadcast[con] = self.broadcast[con][1:]
     def echoServ(self):
         dead = [thread(target=self.echo,args=(i,)) for i in range(self.numol)]
         lastdead = [0 for i in range(len(dead))]
@@ -59,6 +67,7 @@ class inSock:
                     time.sleep(1)
                 else:
                     lastdead[pl] = True
+            time.sleep(0.1)
     def kill(self):
         self.s.close()
 class outSock:
@@ -79,13 +88,9 @@ class outSock:
             self.recvStr()
             las = time.time()
             time.sleep(1)
-    def recvLoop(self):
+    def loop():
         while True:
-            try:
-                print(self.recvStr())
-            except:
-                pass
-                exit()
+            self.loopFn()
     def loop(self):
         while True:
             try:
